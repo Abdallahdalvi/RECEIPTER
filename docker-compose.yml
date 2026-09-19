@@ -1,6 +1,6 @@
 services:
   aghanims-receipt-generator:
-    build: .
+    image: ghcr.io/abdallahdalvi/receipter:latest
     container_name: aghanims-receipt-generator
     restart: unless-stopped
     ports:
@@ -10,3 +10,5 @@ services:
       - DATA_DIR=/app/data
     volumes:
       - ./data:/app/data
+    labels:
+      - com.centurylinklabs.watchtower.enable=true

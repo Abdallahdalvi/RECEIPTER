@@ -15,12 +15,15 @@ Self-hosted receipt generator for Aghanims Phones & Gadgets.
 
 ## CasaOS — easiest deployment
 
-1. Copy/extract this folder onto your CasaOS server.
+The GitHub Actions workflow publishes the container image to GitHub Container Registry whenever `main` is updated. Before the first deployment, ensure the `receipter` package is public in GitHub's **Packages** settings, or authenticate Docker on CasaOS with a GitHub personal access token that has `read:packages` permission.
+
+1. Copy/extract this folder onto your CasaOS server, or clone it with Git.
 2. Open CasaOS Terminal (or SSH) in this folder.
 3. Run:
 
 ```bash
-docker compose up -d --build
+docker compose pull
+docker compose up -d
 ```
 
 4. Open:
@@ -30,6 +33,10 @@ http://YOUR-SERVER-IP:9009
 ```
 
 The database is stored in `./data/receipts.db` on the host because `./data:/app/data` is mounted.
+
+### Watchtower updates
+
+The Compose configuration includes `com.centurylinklabs.watchtower.enable=true`, so Watchtower updates this app after a new `latest` image is published. If your Watchtower runs in label-only mode, no change is needed. Otherwise, start it with `--label-enable` to prevent it from updating other containers unintentionally.
 
 ### CasaOS Custom App
 
