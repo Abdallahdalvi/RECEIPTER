@@ -1,0 +1,8 @@
+{
+  "name": "aghanims-receipt-generator",
+  "version": "3.0.0",
+  "private": true,
+  "description": "Self-hosted receipt generator for Aghanims Phones & Gadgets",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" }
+}

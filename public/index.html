@@ -1,0 +1,849 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Aghanims Receipt Generator</title>
+  <meta name="description" content="Generate Aghanims Phones & Gadgets payment receipts from product links.">
+  <style>
+    :root {
+      --gold: #c7962c;
+      --gold-soft: #e5c46b;
+      --ink: #171719;
+      --muted: #6d6a63;
+      --line: #dedbd2;
+      --paper: #ffffff;
+      --bg: #f3f1ec;
+      --panel: #fffdfa;
+      --danger: #9b2d2d;
+      --success: #1d6b42;
+      --shadow: 0 18px 50px rgba(0,0,0,.07);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { min-height: 100vh; }
+
+    .app-shell { max-width: 1500px; margin: 0 auto; padding: 24px; }
+    .topbar { display:flex; justify-content:space-between; align-items:flex-end; gap:20px; margin-bottom:22px; }
+    .brand-title { margin:0; font-size:26px; letter-spacing:-.02em; }
+    .brand-subtitle { margin:5px 0 0; color:var(--muted); font-size:14px; }
+    .top-actions { display:flex; gap:10px; flex-wrap:wrap; }
+
+    .layout { display:grid; grid-template-columns:minmax(370px, 500px) minmax(0,1fr); gap:24px; align-items:start; }
+    .panel { background:var(--panel); border:1px solid #e6e2d8; border-radius:18px; box-shadow:var(--shadow); }
+    .form-panel { padding:20px; }
+    .preview-wrap { padding:18px; position:sticky; top:16px; }
+
+    .section { padding:0 0 18px; margin-bottom:18px; border-bottom:1px solid #ebe8df; }
+    .section:last-child { border-bottom:0; margin-bottom:0; padding-bottom:0; }
+    .section h2 { font-size:15px; margin:0 0 12px; letter-spacing:.01em; }
+    .helper { font-size:12px; color:var(--muted); line-height:1.45; margin:7px 0 0; }
+
+    .field-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .field-full { grid-column:1 / -1; }
+    label { display:block; font-size:12px; font-weight:700; color:#47443d; margin-bottom:6px; }
+    input, textarea, select { width:100%; border:1px solid #d8d4ca; border-radius:10px; background:#fff; color:#161616; font:inherit; padding:10px 12px; outline:none; }
+    input:focus, textarea:focus, select:focus { border-color:var(--gold); box-shadow:0 0 0 3px rgba(199,150,44,.12); }
+    textarea { min-height:88px; resize:vertical; }
+    input[readonly] { background:#f5f3ee; }
+
+    .url-row { display:grid; grid-template-columns:1fr auto; gap:9px; }
+    .btn { border:1px solid #cfc9bd; background:#fff; color:#222; padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:700; transition:.15s ease; }
+    .btn:hover { transform:translateY(-1px); box-shadow:0 6px 14px rgba(0,0,0,.06); }
+    .btn-primary { background:#1a1a1d; color:#fff; border-color:#1a1a1d; }
+    .btn-gold { background:var(--gold); border-color:var(--gold); color:#fff; }
+    .btn-danger { color:var(--danger); }
+    .btn-small { padding:7px 10px; font-size:12px; }
+
+    .status { min-height:20px; margin-top:9px; font-size:12px; }
+    .status.success { color:var(--success); }
+    .status.error { color:var(--danger); }
+
+    .payment-options { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+    .payment-option { position:relative; }
+    .payment-option input { position:absolute; opacity:0; pointer-events:none; }
+    .payment-option label { display:flex; min-height:72px; align-items:center; justify-content:center; text-align:center; border:1px solid #d9d5cd; border-radius:12px; background:#fff; padding:10px; cursor:pointer; margin:0; }
+    .payment-option input:checked + label { border-color:var(--gold); background:#fbf4df; box-shadow:inset 0 0 0 1px var(--gold); }
+
+    .calc-box { background:#f6f2e8; border:1px solid #e4d9bc; border-radius:12px; padding:12px; margin-top:10px; }
+    .calc-row { display:flex; justify-content:space-between; gap:10px; padding:4px 0; font-size:13px; }
+    .calc-row strong { font-weight:800; }
+
+    .receipt-card { background:#fff; border:1px solid #dad6cc; margin:0 auto; width:min(100%, 794px); padding:44px 42px 46px; box-shadow:0 8px 35px rgba(0,0,0,.06); }
+    .receipt-header { display:grid; grid-template-columns:86px 1fr auto; gap:16px; align-items:center; padding-bottom:15px; border-bottom:2px solid #cfa34b; }
+    .logo { width:86px; height:86px; object-fit:cover; border-radius:6px; background:#000; }
+    .store-name { color:#b47f1f; font-size:25px; font-weight:900; line-height:1.05; letter-spacing:.03em; text-transform:uppercase; }
+    .store-subname { color:#51307e; font-weight:700; margin-top:7px; font-size:17px; letter-spacing:.06em; text-transform:uppercase; }
+    .store-url { color:#77736c; margin-top:6px; font-size:12px; }
+    .date-box { text-align:right; align-self:start; padding-top:2px; }
+    .date-label { color:#77736c; font-size:12px; }
+    .date-value { font-size:14px; font-weight:800; margin-top:3px; white-space:nowrap; }
+
+    .receipt-title-row { display:flex; justify-content:space-between; align-items:flex-end; gap:15px; margin:28px 0 25px; }
+    .receipt-title { font-size:24px; letter-spacing:.05em; margin:0; }
+    .receipt-caption { font-size:11px; color:#77736c; text-align:right; }
+
+    .info-table, .item-table { width:100%; border-collapse:collapse; font-size:13px; }
+    .info-table td { border:1px solid #d9d4c9; padding:7px 8px; vertical-align:top; }
+    .info-label { width:105px; font-weight:800; background:#f3f0e8; }
+    .info-mid { width:auto; }
+    .info-right-label { width:80px; font-weight:800; background:#f3f0e8; }
+    .info-right { width:125px; font-weight:800; }
+
+    .item-table { margin-top:38px; }
+    .item-table th { background:#111; color:#fff; padding:10px 9px; text-align:left; font-size:12px; }
+    .item-table th:nth-child(2), .item-table th:nth-child(3), .item-table th:nth-child(4), .item-table td:nth-child(2), .item-table td:nth-child(3), .item-table td:nth-child(4) { text-align:right; }
+    .item-table td { border:1px solid #d7d2c7; padding:11px 9px; }
+    .item-name { max-width:52%; }
+
+    .totals { margin-top:28px; border:1px solid #d8d1c0; }
+    .total-row { display:flex; justify-content:space-between; gap:15px; padding:10px 11px; border-bottom:1px solid #ddd7c9; font-size:13px; }
+    .total-row:last-child { border-bottom:0; }
+    .total-row.highlight { background:#f3f0e7; font-weight:900; font-size:14px; }
+    .total-row.balance { background:#f3f0e7; font-weight:900; font-size:14px; }
+
+    .status-box { border:1px solid #e1ddd5; margin-top:22px; }
+    .status-row { display:flex; justify-content:space-between; gap:15px; padding:10px 11px; font-size:13px; border-bottom:1px solid #e1ddd5; }
+    .status-row:last-child { border-bottom:0; }
+    .status-row strong { font-weight:900; }
+    .note { margin-top:22px; background:#f1efe8; border:1px solid #dfd9ca; padding:11px; color:#70706b; font-size:12px; line-height:1.45; }
+    .thanks { text-align:center; margin-top:27px; font-size:13px; color:#66635d; line-height:1.5; }
+    .disclaimer { text-align:center; margin-top:85px; font-size:10px; color:#a29f98; }
+
+    .preview-footer { display:flex; justify-content:center; gap:10px; margin-top:14px; flex-wrap:wrap; }
+    .small-note { text-align:center; margin:8px 0 0; color:#77736c; font-size:11px; }
+
+    .compact-row { display:flex; gap:9px; align-items:center; }
+    .compact-row > * { flex:1; }
+    .icon-btn { flex:0 0 auto; }
+
+    .toggle { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .toggle input { width:auto; }
+
+    .history-panel { margin-top:24px; padding:20px; }
+    .history-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:14px; }
+    .history-head h2 { margin:0; font-size:18px; }
+    .history-actions { display:flex; gap:8px; flex-wrap:wrap; }
+    .history-tools { display:grid; grid-template-columns:1fr auto; gap:10px; margin-bottom:14px; }
+    .history-list { display:grid; gap:10px; }
+    .history-empty { padding:28px 14px; text-align:center; color:var(--muted); border:1px dashed #d8d4ca; border-radius:12px; background:#fff; }
+    .history-item { display:grid; grid-template-columns:1fr auto; gap:12px; align-items:center; padding:13px; border:1px solid #e0dcd3; border-radius:12px; background:#fff; }
+    .history-main { min-width:0; }
+    .history-title { font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .history-meta { margin-top:4px; color:var(--muted); font-size:12px; line-height:1.45; }
+    .history-status { display:inline-flex; margin-top:6px; padding:3px 7px; border-radius:999px; background:#f5f1e6; font-size:11px; font-weight:800; }
+    .history-buttons { display:flex; gap:7px; flex-wrap:wrap; justify-content:flex-end; }
+    .toast { position:fixed; right:22px; bottom:22px; z-index:20; padding:11px 14px; border-radius:10px; background:#171719; color:#fff; box-shadow:0 12px 30px rgba(0,0,0,.18); font-size:13px; opacity:0; transform:translateY(10px); pointer-events:none; transition:.2s ease; }
+    .toast.show { opacity:1; transform:translateY(0); }
+    @media (max-width: 1080px) {
+      .layout { grid-template-columns:1fr; }
+      .preview-wrap { position:static; }
+    }
+
+    @media (max-width: 700px) {
+      .app-shell { padding:12px; }
+      .topbar { align-items:flex-start; flex-direction:column; }
+      .field-grid { grid-template-columns:1fr; }
+      .field-full { grid-column:auto; }
+      .payment-options { grid-template-columns:1fr; }
+      .receipt-card { padding:25px 17px 30px; }
+      .receipt-header { grid-template-columns:55px 1fr; }
+      .logo { width:55px; height:55px; }
+      .date-box { grid-column:1 / -1; text-align:left; }
+      .store-name { font-size:18px; }
+      .store-subname { font-size:12px; }
+      .receipt-title-row { align-items:flex-start; flex-direction:column; }
+      .receipt-caption { text-align:left; }
+      .item-table { font-size:11px; }
+      .info-right { width:105px; }
+    }
+
+    @media print {
+      body { background:#fff; }
+      .no-print { display:none !important; }
+      .preview-wrap { padding:0; }
+      .receipt-card { box-shadow:none; border:0; width:210mm; min-height:297mm; padding:16mm 13mm 14mm; }
+      .app-shell { padding:0; max-width:none; }
+      .layout { display:block; }
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <div class="topbar no-print">
+    <div>
+      <h1 class="brand-title">Aghanims Receipt Generator</h1>
+      <p class="brand-subtitle">Paste an Aghanims product link, enter customer/payment details, and generate a print-ready receipt.</p>
+    </div>
+    <div class="top-actions">
+      <button class="btn btn-small" id="loadSample">Load demo</button>
+      <button class="btn btn-small btn-danger" id="resetAll">Reset</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <section class="panel form-panel no-print">
+      <div class="section">
+        <h2>1. Product</h2>
+        <label for="productUrl">Aghanims product link</label>
+        <div class="url-row">
+          <input id="productUrl" type="url" placeholder="https://aghanimsphones.in/product/...">
+          <button class="btn btn-gold" id="fetchProduct">Fetch product</button>
+        </div>
+        <div class="status" id="fetchStatus"></div>
+        <div class="field-grid" style="margin-top:12px">
+          <div class="field-full">
+            <label for="productName">Product name</label>
+            <input id="productName" type="text" placeholder="Nokia 2720 FLIP">
+          </div>
+          <div>
+            <label for="qty">Quantity</label>
+            <input id="qty" type="number" min="1" step="1" value="1">
+          </div>
+          <div>
+            <label for="unitPrice">Unit price (Rs)</label>
+            <input id="unitPrice" type="number" min="0" step="0.01" value="3499">
+          </div>
+        </div>
+        <p class="helper">The server fetcher is restricted to aghanimsphones.in for safety. The name and price remain editable after fetching.</p>
+      </div>
+
+      <div class="section">
+        <h2>2. Customer</h2>
+        <div class="field-grid">
+          <div>
+            <label for="customerName">Customer name</label>
+            <input id="customerName" type="text" placeholder="Customer Name">
+          </div>
+          <div>
+            <label for="customerMobile">Mobile</label>
+            <input id="customerMobile" type="tel" placeholder="10-digit mobile number">
+          </div>
+          <div class="field-full">
+            <label for="deliveryAddress">Delivery address</label>
+            <textarea id="deliveryAddress" placeholder="Full delivery address"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>3. Payment</h2>
+        <div class="payment-options">
+          <div class="payment-option">
+            <input type="radio" name="paymentMode" id="modePrepaid" value="prepaid">
+            <label for="modePrepaid">Full<br>Prepaid</label>
+          </div>
+          <div class="payment-option">
+            <input type="radio" name="paymentMode" id="modePartial" value="partial" checked>
+            <label for="modePartial">Advance +<br>COD</label>
+          </div>
+          <div class="payment-option">
+            <input type="radio" name="paymentMode" id="modeCod" value="cod">
+            <label for="modeCod">Full<br>COD</label>
+          </div>
+        </div>
+        <div class="field-grid" style="margin-top:12px">
+          <div>
+            <label for="advancePaid">Advance paid (Rs)</label>
+            <input id="advancePaid" type="number" min="0" step="0.01" value="200">
+          </div>
+          <div>
+            <label for="balanceDue">Balance due / COD (Rs)</label>
+            <input id="balanceDue" type="number" readonly>
+          </div>
+          <div class="field-full">
+            <label for="paymentReference">Payment reference (optional)</label>
+            <input id="paymentReference" type="text" placeholder="UPI / transaction reference">
+          </div>
+        </div>
+        <div class="calc-box">
+          <div class="calc-row"><span>Order total</span><strong id="calcTotal">Rs 3,499</strong></div>
+          <div class="calc-row"><span>Amount received</span><strong id="calcReceived">Rs 200</strong></div>
+          <div class="calc-row"><span>Remaining</span><strong id="calcRemaining">Rs 3,299</strong></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>4. Receipt</h2>
+        <div class="field-grid">
+          <div>
+            <label for="receiptDate">Receipt date</label>
+            <input id="receiptDate" type="date">
+          </div>
+          <div>
+            <label for="receiptNumber">Receipt number (optional)</label>
+            <input id="receiptNumber" type="text" placeholder="AGP-20260919-001">
+          </div>
+          <div class="field-full">
+            <label for="customNote">Note shown on receipt</label>
+            <textarea id="customNote" placeholder="Auto-generated from payment mode. Edit when needed."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>5. Store settings</h2>
+        <div class="field-grid">
+          <div>
+            <label for="storeName">Store name</label>
+            <input id="storeName" type="text" value="Aghanims">
+          </div>
+          <div>
+            <label for="storeSubname">Store subname</label>
+            <input id="storeSubname" type="text" value="Phones & Gadgets">
+          </div>
+          <div class="field-full">
+            <label for="storeWebsite">Website</label>
+            <input id="storeWebsite" type="text" value="aghanimsphones.in">
+          </div>
+          <div class="field-full">
+            <label for="logoFile">Logo</label>
+            <input id="logoFile" type="file" accept="image/*">
+            <p class="helper">The included Aghanims logo is loaded by default. Upload a replacement only when you need one.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel preview-wrap">
+      <div id="receiptCard" class="receipt-card">
+        <header class="receipt-header">
+          <img id="previewLogo" class="logo" src="assets/aghanims-logo.png" alt="Aghanims logo">
+          <div>
+            <div id="previewStoreName" class="store-name">AGHANIMS</div>
+            <div id="previewStoreSubname" class="store-subname">PHONES & GADGETS</div>
+            <div id="previewStoreWebsite" class="store-url">aghanimsphones.in</div>
+          </div>
+          <div class="date-box">
+            <div class="date-label">Date:</div>
+            <div id="previewDate" class="date-value">19 September 2026</div>
+          </div>
+        </header>
+
+        <div class="receipt-title-row">
+          <h2 class="receipt-title">PAYMENT RECEIPT</h2>
+          <div id="previewCaption" class="receipt-caption">Payment receipt for the order below.</div>
+        </div>
+
+        <table class="info-table">
+          <tr>
+            <td class="info-label">Customer</td>
+            <td id="previewCustomer" class="info-mid">Customer Name</td>
+            <td class="info-right-label">Mobile</td>
+            <td id="previewMobile" class="info-right">—</td>
+          </tr>
+          <tr>
+            <td class="info-label">Delivery<br>Address</td>
+            <td id="previewAddress" class="info-mid" colspan="3">Full delivery address</td>
+          </tr>
+        </table>
+
+        <table class="item-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Qty</th>
+              <th>Unit Price</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td id="previewProduct" class="item-name">Nokia 2720 FLIP</td>
+              <td id="previewQty">1</td>
+              <td id="previewUnitPrice">Rs 3,499</td>
+              <td id="previewAmount"><strong>Rs 3,499</strong></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="totals">
+          <div class="total-row"><span>Order Total</span><strong id="previewTotal">Rs 3,499</strong></div>
+          <div class="total-row"><span>Advance Paid</span><strong id="previewAdvance">Rs 200</strong></div>
+          <div class="total-row balance"><span id="previewBalanceLabel">Balance Due on Delivery (COD)</span><strong id="previewBalance">Rs 3,299</strong></div>
+        </div>
+
+        <div class="status-box">
+          <div class="status-row"><span>Advance Payment Status</span><strong id="previewAdvanceStatus">PAID - Rs 200</strong></div>
+          <div class="status-row"><span>Delivery Payment</span><strong id="previewDeliveryPayment">COD - Rs 3,299</strong></div>
+        </div>
+
+        <div id="previewNote" class="note">Note: This receipt acknowledges the Rs 200 advance received for the above order. The remaining Rs 3,299 is payable to the delivery agent at the time of COD delivery.</div>
+
+        <div class="thanks">Thank you for shopping with <strong id="previewThanksStore">Aghanims Phones & Gadgets.</strong><br>Website: <span id="previewThanksWebsite">aghanimsphones.in</span> | COD & tracked shipping</div>
+        <div id="previewDisclaimer" class="disclaimer">This is a computer-generated receipt and does not require a signature.</div>
+      </div>
+
+      <div class="preview-footer no-print">
+        <button class="btn btn-gold" id="saveReceipt">Save Receipt</button>
+        <button class="btn btn-primary" id="downloadPdf">Download PDF</button>
+        <button class="btn" id="printReceipt">Print / Save PDF</button>
+      </div>
+      <p class="small-note no-print">PDF output is A4 and follows the layout of your reference receipt.</p>
+    </section>
+  </div>
+
+  <section class="panel history-panel no-print">
+    <div class="history-head">
+      <div>
+        <h2>Receipt History</h2>
+        <p class="brand-subtitle">Saved receipts are stored on your CasaOS server, so the same history is available from every device.</p>
+      </div>
+      <div class="history-actions">
+        <button class="btn btn-small" id="exportHistory">Export history</button>
+        <button class="btn btn-small" id="clearHistory">Clear history</button>
+      </div>
+    </div>
+    <div class="history-tools">
+      <input id="historySearch" type="search" placeholder="Search customer, mobile, product or receipt number…">
+      <select id="historyFilter" aria-label="Filter receipt history">
+        <option value="all">All receipts</option>
+        <option value="prepaid">Full prepaid</option>
+        <option value="partial">Advance + COD</option>
+        <option value="cod">Full COD</option>
+      </select>
+    </div>
+    <div id="historyList" class="history-list"></div>
+  </section>
+</div>
+<div id="toast" class="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const stateKey = 'aghanims_receipt_generator_v2';
+  let historyCache = [];
+  let historyLoaded = false;
+
+  const defaultValues = {
+    productUrl: 'https://aghanimsphones.in/product/nokia-2720-flip',
+    productName: 'Nokia 2720 FLIP',
+    qty: 1,
+    unitPrice: 3499,
+    customerName: '',
+    customerMobile: '',
+    deliveryAddress: '',
+    paymentMode: 'partial',
+    advancePaid: 200,
+    paymentReference: '',
+    receiptDate: new Date().toISOString().slice(0,10),
+    receiptNumber: '',
+    customNote: '',
+    storeName: 'Aghanims',
+    storeSubname: 'Phones & Gadgets',
+    storeWebsite: 'aghanimsphones.in'
+  };
+
+  function money(value) {
+    const number = Number(value || 0);
+    return 'Rs ' + number.toLocaleString('en-IN', { minimumFractionDigits: number % 1 ? 2 : 0, maximumFractionDigits: 2 });
+  }
+
+  function prettyDate(value) {
+    if (!value) return '—';
+    const d = new Date(value + 'T00:00:00');
+    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
+  }
+
+  function paymentMode() {
+    return document.querySelector('input[name="paymentMode"]:checked')?.value || 'partial';
+  }
+
+  function setValue(id, value) {
+    const el = $(id);
+    if (el) el.value = value ?? '';
+  }
+
+  function readForm() {
+    return {
+      productUrl: $('productUrl').value.trim(),
+      productName: $('productName').value.trim(),
+      qty: Number($('qty').value || 0),
+      unitPrice: Number($('unitPrice').value || 0),
+      customerName: $('customerName').value.trim(),
+      customerMobile: $('customerMobile').value.trim(),
+      deliveryAddress: $('deliveryAddress').value.trim(),
+      paymentMode: paymentMode(),
+      advancePaid: Number($('advancePaid').value || 0),
+      paymentReference: $('paymentReference').value.trim(),
+      receiptDate: $('receiptDate').value,
+      receiptNumber: $('receiptNumber').value.trim(),
+      customNote: $('customNote').value.trim(),
+      storeName: $('storeName').value.trim(),
+      storeSubname: $('storeSubname').value.trim(),
+      storeWebsite: $('storeWebsite').value.trim()
+    };
+  }
+
+  function saveState() {
+    try { localStorage.setItem(stateKey, JSON.stringify(readForm())); } catch {}
+  }
+
+  function applyState(data) {
+    const v = { ...defaultValues, ...(data || {}) };
+    Object.entries(v).forEach(([key, value]) => {
+      if (key === 'paymentMode') {
+        const radio = document.querySelector(`input[name="paymentMode"][value="${value}"]`);
+        if (radio) radio.checked = true;
+      } else setValue(key, value);
+    });
+    recalc();
+  }
+
+  function getTotals() {
+    const total = Math.max(0, Number($('qty').value || 0) * Number($('unitPrice').value || 0));
+    const mode = paymentMode();
+    let received = Number($('advancePaid').value || 0);
+    if (mode === 'prepaid') received = total;
+    if (mode === 'cod') received = 0;
+    received = Math.min(Math.max(received, 0), total);
+    return { total, received, balance: Math.max(0, total - received), mode };
+  }
+
+  function autoNote(t) {
+    if ($('customNote').dataset.edited === '1' && $('customNote').value.trim()) return $('customNote').value.trim();
+    if (t.mode === 'prepaid') {
+      return `Note: This receipt acknowledges full prepaid payment of ${money(t.received)} received for the above order. No payment is due on delivery.`;
+    }
+    if (t.mode === 'cod') {
+      return `Note: This receipt confirms the above order under full COD. The complete amount of ${money(t.balance)} is payable to the delivery agent at the time of delivery.`;
+    }
+    return `Note: This receipt acknowledges the ${money(t.received)} advance received for the above order. The remaining ${money(t.balance)} is payable to the delivery agent at the time of COD delivery.`;
+  }
+
+  function recalc() {
+    const t = getTotals();
+    const mode = t.mode;
+
+    $('balanceDue').value = t.balance.toFixed(2);
+    $('advancePaid').disabled = mode === 'prepaid' || mode === 'cod';
+    if (mode === 'prepaid') $('advancePaid').value = t.total.toFixed(2);
+    if (mode === 'cod') $('advancePaid').value = '0.00';
+
+    $('calcTotal').textContent = money(t.total);
+    $('calcReceived').textContent = money(t.received);
+    $('calcRemaining').textContent = money(t.balance);
+
+    $('previewDate').textContent = prettyDate($('receiptDate').value);
+    $('previewCustomer').textContent = $('customerName').value || 'Customer Name';
+    $('previewMobile').textContent = $('customerMobile').value || '—';
+    $('previewAddress').textContent = $('deliveryAddress').value || 'Full delivery address';
+    $('previewProduct').textContent = $('productName').value || 'Product name';
+    $('previewQty').textContent = String($('qty').value || 0);
+    $('previewUnitPrice').textContent = money(Number($('unitPrice').value || 0));
+    $('previewAmount').innerHTML = '<strong>' + money(t.total) + '</strong>';
+    $('previewTotal').textContent = money(t.total);
+    $('previewAdvance').textContent = money(t.received);
+    $('previewBalance').textContent = money(t.balance);
+
+    if (mode === 'prepaid') {
+      $('previewBalanceLabel').textContent = 'Balance Due on Delivery';
+      $('previewAdvanceStatus').textContent = 'FULLY PAID - ' + money(t.received);
+      $('previewDeliveryPayment').textContent = 'NO PAYMENT DUE';
+      $('previewCaption').textContent = 'Payment receipt for the order below — fully prepaid.';
+    } else if (mode === 'cod') {
+      $('previewBalanceLabel').textContent = 'Balance Due on Delivery (COD)';
+      $('previewAdvanceStatus').textContent = 'NO ADVANCE PAID';
+      $('previewDeliveryPayment').textContent = 'COD - ' + money(t.balance);
+      $('previewCaption').textContent = 'Order receipt for the order below — full COD.';
+    } else {
+      $('previewBalanceLabel').textContent = 'Balance Due on Delivery (COD)';
+      $('previewAdvanceStatus').textContent = 'PAID - ' + money(t.received);
+      $('previewDeliveryPayment').textContent = 'COD - ' + money(t.balance);
+      $('previewCaption').textContent = 'Payment receipt for the order below.';
+    }
+
+    $('previewNote').textContent = autoNote(t);
+    $('previewStoreName').textContent = ($('storeName').value || 'Aghanims').toUpperCase();
+    $('previewStoreSubname').textContent = ($('storeSubname').value || 'Phones & Gadgets').toUpperCase();
+    $('previewStoreWebsite').textContent = $('storeWebsite').value || 'aghanimsphones.in';
+    $('previewThanksStore').textContent = `${$('storeName').value || 'Aghanims'} ${$('storeSubname').value || 'Phones & Gadgets'}.`;
+    $('previewThanksWebsite').textContent = $('storeWebsite').value || 'aghanimsphones.in';
+
+    saveState();
+  }
+
+  function getHistory() { return historyCache; }
+
+  async function refreshHistory(showError = true) {
+    try {
+      const res = await fetch('/api/receipts', { cache: 'no-store' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Unable to load receipt history.');
+      historyCache = Array.isArray(data) ? data : [];
+      historyLoaded = true;
+      renderHistory();
+      return historyCache;
+    } catch (err) {
+      historyLoaded = false;
+      if (showError) toast(err.message);
+      renderHistory();
+      return [];
+    }
+  }
+
+  function paymentModeLabel(mode) {
+    return mode === 'prepaid' ? 'Full prepaid' : mode === 'cod' ? 'Full COD' : 'Advance + COD';
+  }
+
+  async function makeReceiptNumber() {
+    const d = $('receiptDate').value || new Date().toISOString().slice(0,10);
+    try {
+      const res = await fetch('/api/receipts/next-number?date=' + encodeURIComponent(d), { cache: 'no-store' });
+      const data = await res.json();
+      if (res.ok && data.receiptNumber) return data.receiptNumber;
+    } catch {}
+    const compact = d.replace(/-/g, '');
+    const dayItems = getHistory().filter(x => (x.receiptDate || '') === d);
+    return `AGP-${compact}-${String(dayItems.length + 1).padStart(3, '0')}`;
+  }
+
+  async function saveReceiptToHistory(showToast = true) {
+    const data = readForm();
+    if (!data.customerName && !data.productName) {
+      if (showToast) toast('Add at least a customer or product before saving.');
+      return null;
+    }
+    if (!data.receiptNumber) {
+      data.receiptNumber = await makeReceiptNumber();
+      $('receiptNumber').value = data.receiptNumber;
+    }
+    const t = getTotals();
+    const existing = getHistory().find(item => item.receiptNumber === data.receiptNumber);
+    const record = {
+      id: existing?.id,
+      data: { ...data, total: t.total, received: t.received, balance: t.balance },
+      total: t.total,
+      received: t.received,
+      balance: t.balance
+    };
+    try {
+      const res = await fetch('/api/receipts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(record)
+      });
+      const saved = await res.json();
+      if (!res.ok) throw new Error(saved.error || 'Unable to save receipt.');
+      await refreshHistory(false);
+      if (showToast) toast(`Receipt ${saved.receiptNumber} saved to server history.`);
+      return saved;
+    } catch (err) {
+      if (showToast) toast(err.message);
+      return null;
+    }
+  }
+
+  function loadReceiptFromHistory(id) {
+    const record = getHistory().find(item => item.id === id);
+    if (!record) return;
+    applyState(record.data);
+    $('customNote').dataset.edited = record.data.customNote ? '1' : '0';
+    toast(`Loaded ${record.receiptNumber || 'receipt'}.`);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function deleteHistoryItem(id) {
+    const record = getHistory().find(item => item.id === id);
+    try {
+      const res = await fetch('/api/receipts/' + encodeURIComponent(id), { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Unable to delete receipt.');
+      await refreshHistory(false);
+      if (record) toast(`${record.receiptNumber || 'Receipt'} deleted.`);
+    } catch (err) { toast(err.message); }
+  }
+
+  function renderHistory() {
+    const list = $('historyList');
+    const query = $('historySearch').value.trim().toLowerCase();
+    const filter = $('historyFilter').value;
+    if (!historyLoaded) {
+      list.innerHTML = '<div class="history-empty">Connecting to server history…</div>';
+      return;
+    }
+    let items = getHistory();
+    items = items.filter(item => filter === 'all' || item.payment_mode === filter);
+    if (query) {
+      items = items.filter(item => [item.receipt_number, item.customer_name, item.customer_mobile, item.product_name, item.data?.deliveryAddress]
+        .some(value => String(value || '').toLowerCase().includes(query)));
+    }
+    if (!items.length) {
+      list.innerHTML = '<div class="history-empty">No saved receipts match your search.</div>';
+      return;
+    }
+    list.innerHTML = items.map(item => `
+      <div class="history-item">
+        <div class="history-main">
+          <div class="history-title">${escapeHtml(item.receipt_number || 'Receipt')} · ${escapeHtml(item.customer_name || 'No customer name')}</div>
+          <div class="history-meta">${escapeHtml(item.product_name || 'No product')} · ${money(item.total)} · ${escapeHtml(prettyDate(item.receipt_date))}<br>${escapeHtml(item.customer_mobile || 'No mobile')}</div>
+          <span class="history-status">${escapeHtml(paymentModeLabel(item.payment_mode))} · ${money(item.balance)} due</span>
+        </div>
+        <div class="history-buttons">
+          <button class="btn btn-small" data-history-load="${escapeAttr(item.id)}">Open</button>
+          <button class="btn btn-small" data-history-download="${escapeAttr(item.id)}">PDF</button>
+          <button class="btn btn-small btn-danger" data-history-delete="${escapeAttr(item.id)}">Delete</button>
+        </div>
+      </div>`).join('');
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
+  }
+  function escapeAttr(value) { return escapeHtml(value).replace(/`/g, '&#96;'); }
+
+  function toast(message) {
+    const el = $('toast');
+    el.textContent = message;
+    el.classList.add('show');
+    clearTimeout(window.__aghToastTimer);
+    window.__aghToastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+  }
+
+  function exportHistory() {
+    const items = getHistory();
+    if (!items.length) return toast('There is no receipt history to export.');
+    const blob = new Blob([JSON.stringify(items, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `aghanims_receipt_history_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('Receipt history exported.');
+  }
+
+  async function clearHistory() {
+    const items = getHistory();
+    if (!items.length) return toast('Receipt history is already empty.');
+    if (!confirm(`Delete all ${items.length} saved receipts from the server? This cannot be undone.`)) return;
+    try {
+      const res = await fetch('/api/receipts', { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Unable to clear history.');
+      await refreshHistory(false);
+      toast('Server receipt history cleared.');
+    } catch (err) { toast(err.message); }
+  }
+
+  async function fetchProduct() {
+    const url = $('productUrl').value.trim();
+    const status = $('fetchStatus');
+    if (!url) { status.className = 'status error'; status.textContent = 'Enter a product link first.'; return; }
+    status.className = 'status';
+    status.textContent = 'Fetching product details…';
+    try {
+      const res = await fetch('/api/product?url=' + encodeURIComponent(url));
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Unable to fetch product.');
+      $('productName').value = data.title || '';
+      $('unitPrice').value = data.price ?? '';
+      status.className = 'status success';
+      status.textContent = `Fetched: ${data.title} · ${money(data.price)}`;
+      recalc();
+    } catch (err) {
+      status.className = 'status error';
+      status.textContent = err.message + ' You can still enter the product name and price manually.';
+    }
+  }
+
+  function loadDemo() {
+    applyState({
+      ...defaultValues,
+      customerName: 'Deepali Dhas',
+      customerMobile: '7038313784',
+      deliveryAddress: 'A / 1102, Florista County, Handewadi Rd,\nAutadwadi Handewadi, Satav Nagar, Hadapsar,\nPune, Maharashtra 411028',
+      advancePaid: 200,
+      paymentMode: 'partial',
+      productName: 'Nokia 2720 FLIP',
+      unitPrice: 3500,
+      qty: 1,
+      receiptDate: '2026-09-19',
+      receiptNumber: ''
+    });
+    $('fetchStatus').textContent = 'Demo loaded.';
+    $('fetchStatus').className = 'status success';
+  }
+
+  function resetAll() {
+    localStorage.removeItem(stateKey);
+    applyState(defaultValues);
+    $('fetchStatus').textContent = '';
+    $('customNote').dataset.edited = '0';
+  }
+
+  async function downloadPdf() {
+    const element = $('receiptCard');
+    await saveReceiptToHistory(false);
+    const data = readForm();
+    const suffix = (data.customerName || 'customer').replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '') || 'receipt';
+    const date = data.receiptDate || new Date().toISOString().slice(0,10);
+    const filename = `Aghanims_${suffix}_${date}_Payment_Receipt.pdf`;
+    if (window.html2pdf) {
+      const opt = {
+        margin: 0,
+        filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] }
+      };
+      html2pdf().set(opt).from(element).save();
+    } else {
+      window.print();
+    }
+  }
+
+  function printReceipt() { window.print(); }
+
+  // Wire up fields.
+  document.querySelectorAll('input, textarea, select').forEach(el => {
+    el.addEventListener('input', () => {
+      if (el.id === 'customNote') el.dataset.edited = '1';
+      recalc();
+    });
+    el.addEventListener('change', recalc);
+  });
+
+  $('fetchProduct').addEventListener('click', fetchProduct);
+  $('loadSample').addEventListener('click', loadDemo);
+  $('resetAll').addEventListener('click', resetAll);
+  $('saveReceipt').addEventListener('click', () => saveReceiptToHistory(true));
+  $('downloadPdf').addEventListener('click', downloadPdf);
+  $('printReceipt').addEventListener('click', async () => { await saveReceiptToHistory(false); printReceipt(); });
+  $('historySearch').addEventListener('input', renderHistory);
+  $('historyFilter').addEventListener('change', renderHistory);
+  $('exportHistory').addEventListener('click', exportHistory);
+  $('clearHistory').addEventListener('click', clearHistory);
+  $('historyList').addEventListener('click', (event) => {
+    const load = event.target.closest('[data-history-load]');
+    const download = event.target.closest('[data-history-download]');
+    const del = event.target.closest('[data-history-delete]');
+    if (load) loadReceiptFromHistory(load.dataset.historyLoad);
+    if (download) {
+      loadReceiptFromHistory(download.dataset.historyDownload);
+      setTimeout(() => downloadPdf(), 120);
+    }
+    if (del) deleteHistoryItem(del.dataset.historyDelete);
+  });
+
+  $('logoFile').addEventListener('change', (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => $('previewLogo').src = reader.result;
+    reader.readAsDataURL(file);
+  });
+
+  // Restore saved form state, otherwise start with a useful demo-friendly setup.
+  try {
+    const saved = JSON.parse(localStorage.getItem(stateKey) || 'null');
+    applyState(saved || defaultValues);
+  } catch {
+    applyState(defaultValues);
+  }
+  refreshHistory();
+</script>
+</body>
+</html>

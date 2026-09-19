@@ -1,0 +1,12 @@
+services:
+  aghanims-receipt-generator:
+    build: .
+    container_name: aghanims-receipt-generator
+    restart: unless-stopped
+    ports:
+      - "9009:3000"
+    environment:
+      - PORT=3000
+      - DATA_DIR=/app/data
+    volumes:
+      - ./data:/app/data
