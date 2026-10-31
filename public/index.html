@@ -557,9 +557,11 @@
     $('previewNote').textContent = autoNote(t);
     $('previewStoreName').textContent = ($('storeName').value || 'Aghanims').toUpperCase();
     $('previewStoreSubname').textContent = ($('storeSubname').value || 'Phones & Gadgets').toUpperCase();
-    $('previewStoreWebsite').textContent = $('storeWebsite').value || 'aghanimsphones.in';
+    const storeWebsite = $('storeWebsite').value || 'aghanimsphones.in';
+    const receiptWebsite = storeWebsite.replace(/^(https?:\/\/)?(www\.)?bill\.aghanimsphones\.in\/?$/i, 'aghanimsphones.in');
+    $('previewStoreWebsite').textContent = receiptWebsite;
     $('previewThanksStore').textContent = `${$('storeName').value || 'Aghanims'} ${$('storeSubname').value || 'Phones & Gadgets'}.`;
-    $('previewThanksWebsite').textContent = $('storeWebsite').value || 'aghanimsphones.in';
+    $('previewThanksWebsite').textContent = receiptWebsite;
 
     saveState();
   }
@@ -777,9 +779,13 @@
     const element = $('receiptCard');
     await saveReceiptToHistory(false);
     const data = readForm();
-    const suffix = (data.customerName || 'customer').replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '') || 'receipt';
-    const date = data.receiptDate || new Date().toISOString().slice(0,10);
-    const filename = `Aghanims_${suffix}_${date}_Payment_Receipt.pdf`;
+    const safeFilenamePart = (value, fallback) => (value || fallback)
+      .replace(/[\\/:*?"<>|]+/g, '')
+      .replace(/\s+/g, ' ')
+      .trim() || fallback;
+    const customerName = safeFilenamePart(data.customerName, 'Customer');
+    const customerMobile = safeFilenamePart(data.customerMobile, 'No Mobile');
+    const filename = `Aghanims Receipt - ${customerName} - ${customerMobile}.pdf`;
     if (window.html2pdf) {
       const opt = {
         margin: 0,
